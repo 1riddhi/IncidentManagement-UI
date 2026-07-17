@@ -1,0 +1,38 @@
+import type { Incident, IncidentStatus, Severity } from "../types/incident";
+
+export const severityClasses: Record<Severity, string> = {
+  P1: "border-rose-400/25 bg-rose-400/12 text-rose-200",
+  P2: "border-orange-300/25 bg-orange-300/12 text-orange-200",
+  P3: "border-amber-300/25 bg-amber-300/12 text-amber-100",
+  P4: "border-slate-400/25 bg-slate-400/10 text-slate-300",
+};
+export const statusClasses: Record<IncidentStatus, string> = {
+  Open: "border-rose-400/20 bg-rose-400/10 text-rose-200",
+  Investigating: "border-sky-400/20 bg-sky-400/10 text-sky-200",
+  Monitoring: "border-violet-400/20 bg-violet-400/10 text-violet-200",
+  Resolved: "border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
+};
+export const formatDate = (date: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+export const filterIncidents = (
+  incidents: Incident[],
+  query: string,
+  days: number,
+) => {
+  const cutoff = new Date("2026-07-17T23:59:59Z").getTime() - days * 86400000;
+  const term = query.trim().toLowerCase();
+  return incidents.filter(
+    (incident) =>
+      new Date(incident.createdDate).getTime() >= cutoff &&
+      (!term ||
+        [incident.id, incident.title, incident.service, incident.rootCause]
+          .join(" ")
+          .toLowerCase()
+          .includes(term)),
+  );
+};
