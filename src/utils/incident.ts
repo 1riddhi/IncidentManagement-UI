@@ -8,8 +8,6 @@ export const severityClasses: Record<Severity, string> = {
 };
 export const statusClasses: Record<IncidentStatus, string> = {
   Open: "border-rose-400/20 bg-rose-400/10 text-rose-200",
-  Investigating: "border-sky-400/20 bg-sky-400/10 text-sky-200",
-  Monitoring: "border-violet-400/20 bg-violet-400/10 text-violet-200",
   Resolved: "border-emerald-400/20 bg-emerald-400/10 text-emerald-200",
 };
 export const formatDate = (date: string) =>
@@ -18,19 +16,19 @@ export const formatDate = (date: string) =>
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(date));
+  }).format(new Date(date.includes("T") ? date : `${date.replace(" ", "T")}Z`));
 export const filterIncidents = (
   incidents: Incident[],
   query: string,
-  days: number,
+  days: number | "all",
 ) => {
-  const cutoff = new Date("2026-07-17T23:59:59Z").getTime() - days * 86400000;
+  const cutoff = days === "all" ? Number.NEGATIVE_INFINITY : Date.now() - days * 86400000;
   const term = query.trim().toLowerCase();
   return incidents.filter(
     (incident) =>
-      new Date(incident.createdDate).getTime() >= cutoff &&
+      new Date(incident.createdAt.includes("T") ? incident.createdAt : `${incident.createdAt.replace(" ", "T")}Z`).getTime() >= cutoff &&
       (!term ||
-        [incident.id, incident.title, incident.service, incident.rootCause]
+        [incident.id, incident.title, incident.service, incident.rootCause, incident.resolution, incident.symptoms]
           .join(" ")
           .toLowerCase()
           .includes(term)),

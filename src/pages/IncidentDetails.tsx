@@ -1,235 +1,208 @@
-import {
-  ArrowLeft,
-  BrainCircuit,
-  CheckCircle2,
-  ChevronRight,
-  CircleDot,
-  Lightbulb,
-  SearchX,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, BrainCircuit, CheckCircle2, CircleDot, FileText, SearchX } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import {
-  Header,
-  SectionHeading,
-  SeverityBadge,
-  StatusBadge,
-} from "../components/ui";
-import { incidents } from "../data/incidents";
+import { Header, SectionHeading, SeverityBadge, StatusBadge } from "../components/ui";
+import { useIncidents } from "../hooks/useIncidents";
+import type {
+  Incident,
+  IncidentAnalysisState,
+  TimelineEvent,
+} from "../types/incident";
 import { formatDate } from "../utils/incident";
+
 export function IncidentDetails() {
   const { id } = useParams();
+  const { incidents, loading, errors, refetch, analysis, runAnalysis } = useIncidents();
   const incident = incidents.find((item) => item.id === id);
-  if (!incident)
-    return (
-      <>
-        <Header />
-        <main className="grid min-h-[70vh] place-items-center px-5">
-          <section className="panel max-w-md p-8 text-center">
-            <SearchX className="mx-auto text-indigo-300" size={32} />
-            <h1 className="mt-4 text-xl font-semibold text-white">
-              Incident not found
-            </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              This investigation may have been archived or the incident ID is
-              invalid.
-            </p>
-            <Link
-              to="/"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-400 px-4 py-2.5 text-sm font-medium text-slate-950"
-            >
-              <ArrowLeft size={16} />
-              Back to operations
-            </Link>
-          </section>
-        </main>
-      </>
-    );
+  const analysisState: IncidentAnalysisState =
+    incident?.id && analysis[incident.id]
+      ? analysis[incident.id]
+      : { status: "idle" };
+  const isResolved = incident?.status === "Resolved";
+  if (loading) return <><Header/><main className="grid min-h-[70vh] place-items-center"><p className="text-sm text-slate-400">Loading incident investigation…</p></main></>;
+  if (!incident) return <><Header/><main className="grid min-h-[70vh] place-items-center px-5"><section className="panel max-w-md p-8 text-center"><SearchX className="mx-auto text-indigo-300" size={32}/><h1 className="mt-4 text-xl font-semibold text-white">Incident not found</h1><p className="mt-2 text-sm text-slate-400">{Object.keys(errors).length ? "ServiceNow data may be partially unavailable." : "This incident may have been archived or the incident ID is invalid."}</p>{Object.keys(errors).length > 0 && <button onClick={refetch} className="mt-5 rounded-xl bg-indigo-400 px-4 py-2 text-sm font-medium text-slate-950">Retry data load</button>}<Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm text-indigo-200"><ArrowLeft size={16}/>Back to operations</Link></section></main></>;
+  const timeline = createTimeline(incident);
+  return <><Header/><main className="mx-auto max-w-[1540px] px-4 py-7 sm:px-6 lg:px-8"><Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-indigo-200"><ArrowLeft size={16}/>Back to incident intelligence</Link><section className="panel overflow-hidden"><div className="border-b border-white/7 bg-gradient-to-r from-indigo-400/10 via-transparent to-cyan-400/5 p-5 sm:p-7"><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm font-semibold text-indigo-300">{incident.id}</span><SeverityBadge severity={incident.severity}/><StatusBadge status={incident.status}/></div><h1 className="mt-4 max-w-4xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">{incident.title}</h1></div><div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-4"><Info label="Service" value={incident.service}/><Info label="Created" value={formatDate(incident.createdAt)}/><Info label="Last updated" value={formatDate(incident.updatedAt)}/><Info label="Operational status" value={incident.status}/><div className="sm:col-span-2 lg:col-span-4"><p className="text-xs font-medium uppercase tracking-[.12em] text-slate-500">Observed symptoms</p><p className="mt-2 text-sm leading-6 text-slate-300">{incident.symptoms}</p></div></div></section><section className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_.7fr]"><div className="space-y-6"><AnalysisSection incident={incident} analysisState={analysisState} runAnalysis={runAnalysis} isResolved={isResolved}/><RcaSection incident={incident}/><section className="panel p-5 sm:p-6"><SectionHeading eyebrow="Recommended action" title="Recorded Resolution"/><div className="mt-5 flex gap-3 rounded-xl border border-emerald-400/12 bg-emerald-400/5 p-4 text-sm leading-6 text-slate-300"><CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={18}/>{incident.resolution ?? "No resolution recorded yet. AI analysis has not been requested for this active incident."}</div></section>{incident.attachments.length > 0 && <section className="panel p-5 sm:p-6"><SectionHeading eyebrow="ServiceNow evidence" title="Attachments"/><div className="mt-4 space-y-2">{incident.attachments.map((attachment) => <div key={attachment.id} className="flex items-center gap-3 rounded-xl border border-white/7 bg-white/3 p-3 text-sm text-slate-300"><FileText size={16} className="text-indigo-200"/><span>{attachment.fileName}</span><span className="ml-auto text-xs text-slate-500">{attachment.contentType} · {attachment.sizeBytes} bytes</span></div>)}</div></section>}</div><aside><section className="panel p-5 sm:p-6"><SectionHeading eyebrow="ServiceNow events" title="Incident Timeline"/><ol className="mt-5 space-y-0">{timeline.map((event, index) => <li key={event.title} className="relative flex gap-3 pb-6 last:pb-0"><span className="relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-indigo-400/25 bg-indigo-400/10 text-indigo-200"><CircleDot size={14}/></span>{index < timeline.length - 1 && <i className="absolute left-[13px] top-7 h-[calc(100%-20px)] border-l border-dashed border-white/14"/>}<div className="-mt-0.5"><div className="flex flex-wrap items-center gap-x-2"><h3 className="text-sm font-medium text-slate-200">{event.title}</h3><span className="text-[11px] text-slate-500">{event.time}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{event.description}</p></div></li>)}</ol></section></aside></section></main></>;
+}
+function RcaSection({ incident }: { incident: Incident }) { const available = Boolean(incident.rootCause); return <section className="panel overflow-hidden"><div className="flex items-center gap-3 border-b border-white/7 bg-indigo-400/6 p-5 sm:p-6"><span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-400/15 text-indigo-200"><BrainCircuit size={20}/></span><div><p className="eyebrow">RCA result</p><h2 className="mt-1 text-lg font-semibold text-white">Probable Root Cause</h2></div></div><div className="p-5 sm:p-6"><p className="text-base leading-7 text-slate-200">{incident.rootCause ?? "AI analysis has not been requested for this active incident. Root cause will appear here after analysis is run."}</p>{available && <p className="mt-4 text-xs text-slate-500">Recorded from the resolved ServiceNow incident.</p>}</div></section>; }
+
+function AnalysisSection({
+  incident,
+  analysisState,
+  runAnalysis,
+  isResolved,
+}: {
+  incident: Incident;
+  analysisState: IncidentAnalysisState;
+  runAnalysis: (incident: Incident) => Promise<void>;
+  isResolved: boolean;
+}) {
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-[1540px] px-4 py-7 sm:px-6 lg:px-8">
-        <Link
-          to="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-indigo-200"
+    <section className="panel overflow-hidden">
+      <div className="flex flex-wrap items-center gap-3 border-b border-white/7 bg-cyan-400/5 p-5 sm:p-6">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400/15 text-cyan-200"><BrainCircuit size={20}/></span>
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow">AI analysis</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">Investigate with AI</h2>
+        </div>
+        <button
+          onClick={() => runAnalysis(incident)}
+          disabled={analysisState.status === "loading" || isResolved}
+          className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <ArrowLeft size={16} />
-          Back to incident intelligence
-        </Link>
-        <section className="panel overflow-hidden">
-          <div className="border-b border-white/7 bg-gradient-to-r from-indigo-400/10 via-transparent to-cyan-400/5 p-5 sm:p-7">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-sm font-semibold text-indigo-300">
-                {incident.id}
-              </span>
-              <SeverityBadge severity={incident.severity} />
-              <StatusBadge status={incident.status} />
-            </div>
-            <h1 className="mt-4 max-w-4xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              {incident.title}
-            </h1>
+          {isResolved
+            ? "Analysis disabled for resolved incidents"
+            : analysisState.status === "loading"
+            ? "Analysis in progress"
+            : "Analyze with AI"}
+        </button>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        {analysisState.status === "idle" && !isResolved && (
+          <p className="text-sm leading-6 text-slate-300">
+            Start an AI investigation to surface a recommendation, agent findings, and similar incidents for this ticket.
+          </p>
+        )}
+        {isResolved && (
+          <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-5 text-sm text-slate-300">
+            <p className="font-semibold text-white">Analysis unavailable</p>
+            <p className="mt-2">This incident is resolved, so AI analysis is disabled.</p>
           </div>
-          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-4">
-            <Info label="Service" value={incident.service} />
-            <Info label="Created" value={formatDate(incident.createdDate)} />
-            <Info label="Operational status" value={incident.status} />
-            <Info label="AI confidence" value={`${incident.confidence}%`} />
-            <div className="sm:col-span-2 lg:col-span-4">
-              <p className="text-xs font-medium uppercase tracking-[.12em] text-slate-500">
-                Observed symptoms
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                {incident.symptoms}
-              </p>
-            </div>
+        )}
+
+        {analysisState.status === "loading" && (
+          <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-5 text-sm text-slate-300">
+            <p className="font-semibold text-white">Analysis is running</p>
+            <p className="mt-2">The AI review is underway. This may take a few moments.</p>
           </div>
-        </section>
-        <section className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+        )}
+
+        {analysisState.status === "error" && (
+          <div className="rounded-3xl border border-rose-400/20 bg-rose-400/5 p-5 text-sm text-rose-100">
+            <p className="font-semibold text-white">Analysis failed</p>
+            <p className="mt-2 text-slate-300">{analysisState.error ?? "Unable to complete analysis."}</p>
+            <button
+              onClick={() => runAnalysis(incident)}
+              className="mt-4 inline-flex rounded-xl bg-rose-400/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-400/25"
+            >
+              Retry analysis
+            </button>
+          </div>
+        )}
+
+        {analysisState.status === "success" && analysisState.response && (
           <div className="space-y-6">
-            <section className="panel overflow-hidden">
-              <div className="flex items-center gap-3 border-b border-white/7 bg-indigo-400/6 p-5 sm:p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-400/15 text-indigo-200">
-                  <BrainCircuit size={20} />
-                </span>
-                <div>
-                  <p className="eyebrow">AI RCA result</p>
-                  <h2 className="mt-1 text-lg font-semibold text-white">
-                    Probable Root Cause
-                  </h2>
-                </div>
-              </div>
-              <div className="p-5 sm:p-6">
-                <p className="text-base leading-7 text-slate-200">
-                  {incident.rootCause}
-                </p>
-                <div className="mt-6">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-medium text-slate-300">
-                      AI confidence
-                    </span>
-                    <span className="font-semibold text-indigo-200">
-                      {incident.confidence}%
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/7">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-cyan-300"
-                      style={{ width: `${incident.confidence}%` }}
-                    />
-                  </div>
-                </div>
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
+              <SectionHeading eyebrow="AI recommendation" title="Recommendation" />
+              <div className="mt-4 space-y-5 text-sm leading-7 text-slate-300">
+                {renderRecommendationSections(analysisState.response.recommendation)}
               </div>
             </section>
-            <section className="panel p-5 sm:p-6">
-              <SectionHeading
-                eyebrow="Signal correlation"
-                title="AI Reasoning"
-              />
-              <ul className="mt-5 space-y-4">
-                {incident.reasoning.map((reason) => (
-                  <li
-                    key={reason}
-                    className="flex gap-3 text-sm leading-6 text-slate-300"
-                  >
-                    <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-indigo-400/12 text-indigo-200">
-                      <Sparkles size={12} />
-                    </span>
-                    {reason}
-                  </li>
+
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
+              <SectionHeading eyebrow="Agent findings" title="Evidence from AI" />
+              <div className="mt-5 space-y-4">
+                {analysisState.response.agentFindings.map((finding) => (
+                  <div key={finding.agentName} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[.18em] text-cyan-200">
+                        {finding.agentName}
+                      </span>
+                      <h3 className="text-sm font-semibold text-white">{finding.status}</h3>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[.22em] text-slate-500">Summary</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">{finding.summary}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[.22em] text-slate-500">Evidence</p>
+                        <div className="mt-2 rounded-2xl border border-white/10 bg-slate-900/80 p-4 text-sm leading-6 text-slate-300">
+                          {finding.evidence}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </section>
-            <section className="panel p-5 sm:p-6">
-              <SectionHeading
-                eyebrow="Recommended action"
-                title="Suggested Resolution"
-              />
-              <div className="mt-5 flex gap-3 rounded-xl border border-emerald-400/12 bg-emerald-400/5 p-4 text-sm leading-6 text-slate-300">
-                <CheckCircle2
-                  className="mt-0.5 shrink-0 text-emerald-300"
-                  size={18}
-                />
-                {incident.resolution}
+
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
+              <SectionHeading eyebrow="Related intelligence" title="Similar incidents" />
+              <div className="mt-5 space-y-4">
+                {analysisState.response.similarIncidents.map((match) => (
+                  <Link
+                    key={match.id}
+                    to={`/incident/${match.id}`}
+                    className="block rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:border-cyan-300/30 hover:bg-white/10"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-semibold uppercase tracking-[.18em] text-indigo-300">{match.id}</span>
+                      <span className="rounded-full bg-slate-900/90 px-2 py-1 text-[11px] uppercase tracking-[.22em] text-slate-300">
+                        {formatSimilarity(match.similarity)} similar
+                      </span>
+                    </div>
+                    <h3 className="mt-3 text-sm font-semibold text-white">{match.title || "Untitled incident"}</h3>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[.22em] text-slate-400">
+                      <span className="rounded-full bg-white/5 px-2 py-1">{match.service}</span>
+                      <span className="rounded-full bg-white/5 px-2 py-1">{match.resolvedAt ? "Resolved" : "Open"}</span>
+                      <span className="rounded-full bg-white/5 px-2 py-1">{match.severity}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </section>
           </div>
-          <aside className="space-y-6">
-            <section className="panel p-5 sm:p-6">
-              <SectionHeading
-                eyebrow="Pattern matching"
-                title="Related Incidents"
-              />
-              <div className="mt-5 space-y-3">
-                {incident.related.map((related) => (
-                  <div
-                    key={related.id}
-                    className="rounded-xl border border-white/7 bg-white/3 p-4 transition hover:border-indigo-400/25"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-mono text-xs font-semibold text-indigo-300">
-                        {related.id}
-                      </span>
-                      <span className="text-xs font-medium text-cyan-200">
-                        {related.similarity}% similar
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-300">
-                      {related.title}
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      {related.status}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-            <section className="panel p-5 sm:p-6">
-              <SectionHeading
-                eyebrow="Event sequence"
-                title="Incident Timeline"
-              />
-              <ol className="mt-5 space-y-0">
-                {incident.timeline.map((event, index) => (
-                  <li
-                    key={event.title}
-                    className="relative flex gap-3 pb-6 last:pb-0"
-                  >
-                    <span className="relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-indigo-400/25 bg-indigo-400/10 text-indigo-200">
-                      <CircleDot size={14} />
-                    </span>
-                    {index < incident.timeline.length - 1 && (
-                      <i className="absolute left-[13px] top-7 h-[calc(100%-20px)] border-l border-dashed border-white/14" />
-                    )}
-                    <div className="-mt-0.5">
-                      <div className="flex flex-wrap items-center gap-x-2">
-                        <h3 className="text-sm font-medium text-slate-200">
-                          {event.title}
-                        </h3>
-                        <span className="text-[11px] text-slate-500">
-                          {event.time}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        {event.description}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          </aside>
-        </section>
-      </main>
-    </>
+        )}
+      </div>
+    </section>
   );
 }
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium uppercase tracking-[.12em] text-slate-500">
-        {label}
+
+function formatSimilarity(similarity: number) {
+  return `${Math.round(similarity > 1 ? similarity : similarity * 100)}%`;
+}
+function renderRecommendationSections(recommendation: string) {
+  const blocks = recommendation.split(/\n{2,}/g).map((block) => block.trim()).filter(Boolean);
+
+  return blocks.map((block, index) => {
+    const lines = block.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    const firstLine = lines[0] ?? "";
+    const restLines = lines.slice(1);
+    const headingMatch = firstLine.match(/^#{1,6}\s*(.+)$/);
+    const isHeadingLike = /^(summary|assessment|hypothesis|immediate|safe remediation|recommend|evidence)/i.test(firstLine);
+
+    if (headingMatch || isHeadingLike) {
+      return (
+        <div key={index} className="space-y-3">
+          <h3 className="text-sm font-semibold text-white">
+            {headingMatch ? headingMatch[1] : firstLine}
+          </h3>
+          <div className="space-y-2 text-slate-300">
+            {restLines.map((line, lineIndex) => (
+              <p key={lineIndex}>{line}</p>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (block.startsWith("- ")) {
+      return (
+        <ul key={index} className="list-disc space-y-2 pl-5 text-slate-300">
+          {block.split(/\n/).map((item, itemIndex) => (
+            <li key={itemIndex}>{item.replace(/^-\s*/, "")}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return (
+      <p key={index} className="text-slate-300">
+        {block}
       </p>
-      <p className="mt-2 text-sm font-medium text-slate-200">{value}</p>
-    </div>
-  );
+    );
+  });
 }
+function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-xs font-medium uppercase tracking-[.12em] text-slate-500">{label}</p><p className="mt-2 text-sm font-medium text-slate-200">{value}</p></div>; }
+function createTimeline(incident: Incident): TimelineEvent[] { const events = [{ title: "Incident created", description: "Incident opened in ServiceNow.", time: formatDate(incident.createdAt) }, { title: "Last updated", description: "Latest ServiceNow record update.", time: formatDate(incident.updatedAt) }]; if (incident.resolvedAt) events.push({ title: "Incident resolved", description: "Resolution recorded in ServiceNow.", time: formatDate(incident.resolvedAt) }); return events; }

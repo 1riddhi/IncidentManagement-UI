@@ -1,32 +1,64 @@
 export type Severity = "P1" | "P2" | "P3" | "P4";
-export type IncidentStatus =
-  | "Open"
-  | "Investigating"
-  | "Monitoring"
-  | "Resolved";
+export type IncidentStatus = "Open" | "Resolved";
+export type IncidentSource = "active" | "historical";
+
+export interface IncidentAttachment {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  fileContent: string;
+}
+
+export interface ServiceNowIncident {
+  id: string;
+  title: string;
+  service: string;
+  severity: string;
+  symptoms: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  updatedAt: string;
+  rootCause: string | null;
+  resolution: string | null;
+  logs: string | null;
+  attachments: IncidentAttachment[];
+}
+
 export interface TimelineEvent {
   title: string;
   description: string;
   time: string;
 }
-export interface RelatedIncident {
-  id: string;
-  title: string;
-  similarity: number;
-  status: IncidentStatus;
-}
-export interface Incident {
-  id: string;
-  title: string;
-  service: string;
+
+export interface Incident extends ServiceNowIncident {
   severity: Severity;
   status: IncidentStatus;
-  symptoms: string;
-  rootCause: string;
-  resolution: string;
-  createdDate: string;
-  confidence: number;
-  reasoning: string[];
-  timeline: TimelineEvent[];
-  related: RelatedIncident[];
+  source: IncidentSource;
+}
+
+export type AnalysisStatus = "idle" | "loading" | "success" | "error";
+
+export interface AgentFinding {
+  agentName: string;
+  status: string;
+  summary: string;
+  evidence: string;
+}
+
+export interface SimilarIncident extends ServiceNowIncident {
+  similarity: number;
+}
+
+export interface AnalysisResponse {
+  incomingIncident: ServiceNowIncident;
+  similarIncidents: SimilarIncident[];
+  agentFindings: AgentFinding[];
+  recommendation: string;
+}
+
+export interface IncidentAnalysisState {
+  status: AnalysisStatus;
+  response?: AnalysisResponse;
+  error?: string;
 }

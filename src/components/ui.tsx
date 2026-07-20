@@ -107,21 +107,22 @@ export function FilterDropdown({
   days,
   onChange,
 }: {
-  days: number;
-  onChange: (days: number) => void;
+  days: number | "all";
+  onChange: (days: number | "all") => void;
 }) {
   return (
     <label className="relative">
       <select
         aria-label="Incident date range"
         value={days}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChange(e.target.value === "all" ? "all" : Number(e.target.value))}
         className="appearance-none rounded-xl border border-white/10 bg-[#121d2e] py-2 pl-3 pr-8 text-xs text-slate-300 outline-none focus:border-indigo-400/50"
       >
         <option value={5}>Last 5 Days</option>
         <option value={7}>Last 7 Days</option>
         <option value={15}>Last 15 Days</option>
         <option value={30}>Last 30 Days</option>
+        <option value="all">All time</option>
       </select>
       <ChevronDown
         className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500"
@@ -155,7 +156,7 @@ export function IncidentCard({
         </span>
         <span className="flex items-center gap-1">
           <Clock3 size={13} />
-          {formatDate(incident.createdDate)}
+          {formatDate(incident.createdAt)}
         </span>
       </div>
       <button
@@ -163,7 +164,7 @@ export function IncidentCard({
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-400/20 bg-indigo-400/10 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-400/18"
       >
         <BrainCircuit size={16} />
-        Analyze with AI
+        View investigation
       </button>
     </article>
   );
