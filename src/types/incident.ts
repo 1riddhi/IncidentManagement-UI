@@ -62,3 +62,23 @@ export interface IncidentAnalysisState {
   response?: AnalysisResponse;
   error?: string;
 }
+
+export interface ChatFinding {
+  agentName: string;
+  status: string;
+  summary: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  sources: string[];
+  newFindings: ChatFinding[];
+  agentCalls: string[];
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  response?: ChatResponse;
+}
