@@ -23,14 +23,14 @@ export const filterIncidents = (
   days: number | "all",
 ) => {
   const cutoff = days === "all" ? Number.NEGATIVE_INFINITY : Date.now() - days * 86400000;
-  const term = query.trim().toLowerCase();
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return incidents.filter(
     (incident) =>
-      new Date(incident.createdAt.includes("T") ? incident.createdAt : `${incident.createdAt.replace(" ", "T")}Z`).getTime() >= cutoff &&
-      (!term ||
-        [incident.id, incident.title, incident.service, incident.rootCause, incident.resolution, incident.symptoms]
+      (terms.length > 0 || new Date(incident.createdAt.includes("T") ? incident.createdAt : `${incident.createdAt.replace(" ", "T")}Z`).getTime() >= cutoff) &&
+      (!terms.length ||
+        terms.every((term) => [incident.id, incident.title, incident.service, incident.severity, incident.status, incident.rootCause, incident.resolution, incident.symptoms, incident.logs]
           .join(" ")
           .toLowerCase()
-          .includes(term)),
+          .includes(term))),
   );
 };

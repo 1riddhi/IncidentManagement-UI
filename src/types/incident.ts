@@ -50,11 +50,23 @@ export interface SimilarIncident extends ServiceNowIncident {
   similarity: number;
 }
 
+export interface AgentFlowStep {
+  agentName: string;
+  status: string;
+}
+
 export interface AnalysisResponse {
-  incomingIncident: ServiceNowIncident;
+  analysisId?: string;
+  incomingIncident: Partial<ServiceNowIncident>;
   similarIncidents: SimilarIncident[];
   agentFindings: AgentFinding[];
   recommendation: string;
+  summary?: string;
+  nextActionSteps: string[];
+  rca: string[];
+  codeChanges?: string;
+  evidenceSummary?: string;
+  agentFlow: AgentFlowStep[];
 }
 
 export interface IncidentAnalysisState {

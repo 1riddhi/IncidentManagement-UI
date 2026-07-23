@@ -10,16 +10,34 @@ import {
   Settings2,
   ShieldAlert,
 } from "lucide-react";
+import { FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useIncidents } from "../hooks/useIncidents";
 import type { Incident, IncidentStatus, Severity } from "../types/incident";
-import { formatDate, severityClasses, statusClasses } from "../utils/incident";
+import { filterIncidents, formatDate, severityClasses, statusClasses } from "../utils/incident";
 
-export function Header({
-  query,
-  onQueryChange,
-}: {
-  query?: string;
-  onQueryChange?: (value: string) => void;
-}) {
+export function Header() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { incidents } = useIncidents();
+  const query = searchParams.get("q") ?? "";
+  const matches = query ? filterIncidents(incidents, query, "all").slice(0, 6) : [];
+
+  function updateQuery(value: string) {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set("q", value);
+    else next.delete("q");
+    setSearchParams(next, { replace: true });
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+  }
+
+  function openIncident(id: string) {
+    navigate(`/incident/${id}`);
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b border-white/7 bg-[#09111ee6] backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center gap-5 px-4 sm:px-6 lg:px-8">
@@ -33,19 +51,22 @@ export function Header({
             <span className="font-normal text-slate-400">Management</span>
           </span>
         </a>
-        <label className="relative mx-auto hidden w-full max-w-xl md:block">
+        <form onSubmit={submitSearch} className="relative mx-auto hidden w-full max-w-xl md:block">
           <Search
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
             size={17}
           />
           <input
             aria-label="Search incidents"
-            value={query ?? ""}
-            onChange={(e) => onQueryChange?.(e.target.value)}
+            value={query}
+            onChange={(e) => updateQuery(e.target.value)}
             placeholder="Search incidents, services, RCA..."
             className="h-10 w-full rounded-xl border border-white/8 bg-white/5 pl-10 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/50 focus:bg-white/8"
           />
-        </label>
+          {query && <div className="absolute left-0 right-0 top-12 overflow-hidden rounded-xl border border-white/10 bg-[#121d2e] p-1 shadow-2xl shadow-slate-950/60">
+            {matches.length > 0 ? <ul role="listbox" aria-label="Incident search results" className="max-h-80 overflow-y-auto">{matches.map((incident) => <li key={`${incident.source}-${incident.id}`}><button type="button" onClick={() => openIncident(incident.id)} className="w-full rounded-lg px-3 py-2.5 text-left transition hover:bg-white/7"><span className="font-mono text-xs font-semibold text-indigo-300">{incident.id}</span><span className="ml-2 text-sm text-slate-200">{incident.title || "Untitled incident"}</span><span className="mt-1 block truncate text-xs text-slate-500">{incident.service} · {incident.status} · {incident.severity}</span></button></li>)}</ul> : <p className="px-3 py-3 text-sm text-slate-400">No incidents match “{query}”.</p>}
+          </div>}
+        </form>
         <div className="ml-auto flex items-center gap-1 text-slate-400">
           <button aria-label="Notifications" className="icon-button">
             <Bell size={18} />
