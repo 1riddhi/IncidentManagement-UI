@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Bell,
-  Bot,
   BrainCircuit,
   ChevronDown,
   Clock3,
@@ -51,14 +50,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/7 bg-[#09111ee6] backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center gap-5 px-4 sm:px-6 lg:px-8">
-        <a href="/" className="flex shrink-0 items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-400 to-cyan-300 text-slate-950 shadow-lg shadow-indigo-500/20">
-            <Bot size={20} strokeWidth={2.2} />
-          </span>
-          <span className="hidden text-sm font-semibold tracking-tight text-white sm:block">
-            Prod Pulse Agent
-            <br />
-            {/* <span className="font-normal text-slate-400">Management</span> */}
+        <a href="/" className="flex h-full shrink-0 items-end gap-3">
+          <img src="/prodpulseLogo.svg" alt="Prod Pulse" className="h-[72px] w-auto object-contain" />
+          <span className="pl-0 mb-4 hidden text-2xl font-medium leading-none tracking-tight sm:block">
+            <span className="brand-prod">Prod</span><span className="brand-pulse">Pulse</span><span className="brand-agent"> Agent</span>
           </span>
         </a>
         <form onSubmit={submitSearch} className="relative mx-auto hidden w-full max-w-xl md:block">

@@ -81,6 +81,24 @@ button {
   text-transform: uppercase;
   color: #a5b4fc;
 }
+.brand-prod {
+  color: #071243;
+}
+.brand-pulse {
+  color: #0345c1;
+}
+.brand-agent {
+  color: #071243;
+}
+html[data-theme="dark"] .brand-prod {
+  color: #f8fafc;
+}
+html[data-theme="dark"] .brand-pulse {
+  color: #60a5fa;
+}
+html[data-theme="dark"] .brand-agent {
+  color: #94a3b8;
+}
 .incident-chat-expanded {
   transform-origin: right bottom;
   animation: incident-chat-expand 320ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -115,17 +133,35 @@ button {
   animation-duration: 2.8s;
   animation-direction: reverse;
 }
-.confidence-ring {
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(15, 23, 42, 0.86) 54%, transparent 56%);
-  filter: drop-shadow(0 0 8px currentColor);
+.confidence-meter-segment {
+  transition: background-color 120ms ease;
 }
-.confidence-ring-progress {
-  animation: confidence-ring-draw 850ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+.confidence-meter-segment-active {
 }
-@keyframes confidence-ring-draw {
-  from { stroke-dashoffset: 114; opacity: 0.2; }
-  to { stroke-dashoffset: 0; opacity: 1; }
+.confidence-meter {
+  border: 1px solid rgba(251, 191, 36, 0.18);
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.09), rgba(30, 41, 59, 0.18));
+  padding: 0.55rem 0.65rem;
+}
+.confidence-meter-score {
+  color: #fef3c7;
+  background: rgba(251, 191, 36, 0.13);
+}
+.chat-code-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+.chat-code-editor pre {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+section[aria-label="Incident assistant window"][data-expanded="false"] .chat-code-height {
+  max-height: 10rem;
+}
+section[aria-label="Incident assistant window"][data-expanded="true"] .chat-code-height {
+  max-height: calc(100vh - 23rem);
 }
 @keyframes thinking-orbit { to { transform: rotate(360deg); } }
 .investigation-frame {
@@ -367,10 +403,23 @@ html[data-theme="light"] .investigation-thinking {
 html[data-theme="light"] .investigation-thinking .text-white { color: #172033 !important; }
 html[data-theme="light"] .investigation-thinking .text-slate-400 { color: #64748b !important; }
 html[data-theme="light"] .thinking-orbit { color: #0e7490; }
-html[data-theme="light"] .confidence-ring {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.92) 54%, transparent 56%);
-}
 html[data-theme="light"] .investigation-thinking .typing-dots i {
   background: #4f46e5;
   box-shadow: 0 0 7px rgba(79, 70, 229, 0.3);
 }
+html[data-theme="light"] .confidence-meter {
+  color: #a16207 !important;
+  border-color: rgba(202, 138, 4, 0.28);
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(255, 251, 235, 0.76));
+}
+html[data-theme="light"] .confidence-meter-score {
+  color: #854d0e;
+  background: rgba(202, 138, 4, 0.14);
+}
+html[data-theme="light"] .confidence-meter-segment {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme="light"] .confidence-meter-segment-active:nth-child(-n+2) { background-color: #fde68a !important; }
+html[data-theme="light"] .confidence-meter-segment-active:nth-child(n+3):nth-child(-n+5) { background-color: #facc15 !important; }
+html[data-theme="light"] .confidence-meter-segment-active:nth-child(n+6):nth-child(-n+8) { background-color: #eab308 !important; }
+html[data-theme="light"] .confidence-meter-segment-active:nth-child(n+9) { background-color: #ca8a04 !important; }
