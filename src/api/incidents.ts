@@ -143,7 +143,28 @@ export async function analyzeIncident(
     evidenceSummary: stringValue(candidate.evidenceSummary),
     agentFlow: Array.isArray(candidate.agentFlow) ? candidate.agentFlow.map(normalizeAgentFlowStep) : [],
     confidence: normalizeConfidence(candidate.confidence),
+    confluenceSources: normalizeConfluenceSources(candidate.confluenceSources),
   };
+}
+
+function normalizeConfluenceSources(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const source = item as Record<string, unknown>;
+    const title = stringValue(source.title);
+    const url = stringValue(source.url);
+    if (!title || !url) return [];
+    return [{
+      pageId: stringValue(source.pageId) ?? url,
+      title,
+      url,
+      issueSummary: stringValue(source.issueSummary) ?? "No issue summary was returned.",
+      spaceKey: stringValue(source.spaceKey),
+      lastModified: stringValue(source.lastModified),
+      excerpt: stringValue(source.excerpt),
+    }];
+  });
 }
 
 function stringValue(value: unknown) {

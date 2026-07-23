@@ -8,6 +8,7 @@ import {
   CircleDot,
   Clipboard,
   Code2,
+  ExternalLink,
   FileText,
   SearchX,
 } from "lucide-react";
@@ -385,6 +386,47 @@ function AnalysisSection({
                     code={analysisState.response.codeChanges}
                   />
                 )}
+              </ExpandableAnalysisSection>
+            )}
+
+            {analysisState.response.confluenceSources.length > 0 && (
+              <ExpandableAnalysisSection
+                eyebrow="Knowledge base"
+                title="Confluence guidance"
+              >
+                <div className="mt-5 space-y-3">
+                  {analysisState.response.confluenceSources.map((source) => (
+                    <article
+                      key={source.pageId}
+                      className="rounded-2xl border border-white/10 bg-white/4 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold text-white">
+                            {source.title}
+                          </h3>
+                          {source.spaceKey && (
+                            <p className="mt-1 text-[11px] font-medium uppercase tracking-[.14em] text-indigo-300">
+                              {source.spaceKey}
+                            </p>
+                          )}
+                        </div>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Open ${source.title} in Confluence`}
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-cyan-300/20 bg-cyan-300/10 text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/20"
+                        >
+                          <ExternalLink size={16} />
+                        </a>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-300">
+                        {source.issueSummary}
+                      </p>
+                    </article>
+                  ))}
+                </div>
               </ExpandableAnalysisSection>
             )}
 

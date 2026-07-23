@@ -65,6 +65,16 @@ export interface AnalysisConfidence {
   recommendation?: ConfidenceScore;
 }
 
+export interface ConfluenceSource {
+  pageId: string;
+  title: string;
+  url: string;
+  issueSummary: string;
+  spaceKey?: string;
+  lastModified?: string;
+  excerpt?: string;
+}
+
 export interface AnalysisResponse {
   analysisId?: string;
   incomingIncident: Partial<ServiceNowIncident>;
@@ -78,6 +88,7 @@ export interface AnalysisResponse {
   evidenceSummary?: string;
   agentFlow: AgentFlowStep[];
   confidence?: AnalysisConfidence;
+  confluenceSources: ConfluenceSource[];
 }
 
 export interface IncidentAnalysisState {
