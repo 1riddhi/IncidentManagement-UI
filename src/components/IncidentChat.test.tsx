@@ -48,4 +48,15 @@ describe("IncidentChat", () => {
     expect(screen.getByText(/Complete “Analyze with AI”/)).toBeTruthy();
     expect((screen.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it("expands into a floating window and minimizes back to the sidebar", async () => {
+    vi.useFakeTimers();
+    render(<IncidentChat isEnabled />);
+    fireEvent.click(screen.getByRole("button", { name: "Expand assistant window" }));
+    expect(screen.getByRole("button", { name: "Minimize assistant window" })).toBeTruthy();
+    expect(screen.getByLabelText("Incident assistant window").getAttribute("aria-modal")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Minimize assistant window" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(220); });
+    expect(screen.getByRole("button", { name: "Expand assistant window" })).toBeTruthy();
+  });
 });
