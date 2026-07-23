@@ -281,3 +281,21 @@ html[data-theme="light"] .chat-scroll::-webkit-scrollbar-thumb {
 html[data-theme="light"] .chat-code-scroll {
   scrollbar-color: rgba(71, 85, 105, 0.7) transparent;
 }
+html[data-theme="light"] .chat-code-editor {
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+}
+html[data-theme="light"] .chat-code-editor > div {
+  border-color: #cbd5e1 !important;
+  background: #eef2ff !important;
+}
+html[data-theme="light"] .chat-code-editor pre,
+html[data-theme="light"] .chat-code-editor code {
+  color: #1e293b !important;
+}
+html[data-theme="light"] .chat-code-editor .text-slate-600 {
+  color: #94a3b8 !important;
+}
+html[data-theme="light"] .chat-code-editor button {
+  color: #334155 !important;
+}

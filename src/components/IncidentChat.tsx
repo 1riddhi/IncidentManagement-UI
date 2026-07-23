@@ -114,7 +114,7 @@ function CodeChanges({ code }: { code: string }) {
     window.setTimeout(() => setCopied(false), 1600);
   }
 
-  return <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-[#0b1322]">
+  return <div className="chat-code-editor mt-4 overflow-hidden rounded-xl border border-white/10 bg-[#0b1322]">
     <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/4 px-3 py-2"><span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-cyan-100"><Code2 size={14} />Suggested code changes <span className="rounded bg-white/8 px-1.5 py-0.5 text-[10px] text-slate-400">{language}</span></span><button type="button" aria-label="Copy code changes" onClick={() => void copyCode()} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-300 transition hover:bg-white/8 hover:text-white">{copied ? <Check size={13} className="text-emerald-300" /> : <Clipboard size={13} />} {copied ? "Copied" : "Copy"}</button></div>
     <pre className="chat-code-scroll max-h-96 overflow-auto p-3 text-xs leading-6 text-slate-200"><code>{lines.map((line, index) => <span key={index} className="block min-w-max"><span className="mr-4 inline-block w-7 select-none text-right text-slate-600">{index + 1}</span>{line || " "}</span>)}</code></pre>
   </div>;
