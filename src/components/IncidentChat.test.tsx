@@ -12,7 +12,7 @@ vi.mock("react-router-dom", () => ({ useParams: () => ({ id: "INC-BNK-1001" }) }
 describe("IncidentChat", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-  it("sends messages to the analysis session and renders only approved response sections", async () => {
+  it("sends messages to the analysis session and renders the assistant answer", async () => {
     requestChatResponse.mockResolvedValue({ answer: "Check the release.", agentSummary: "No release found.", evidenceSummary: "CI/CD logs are missing." });
     render(<IncidentChat/>);
     const input = screen.getByLabelText("Ask the incident assistant");
@@ -22,9 +22,8 @@ describe("IncidentChat", () => {
     await act(async () => {});
     expect(requestChatResponse).toHaveBeenCalledWith("analysis-1", "What should I check?");
     expect(screen.getByText("Check the release.")).toBeTruthy();
-    expect(screen.getByText("Agent summary")).toBeTruthy();
-    expect(screen.getByText("Evidence summary")).toBeTruthy();
-    expect(screen.queryByText("Response details")).toBeNull();
+    expect(screen.queryByText("Agent summary")).toBeNull();
+    expect(screen.queryByText("Evidence summary")).toBeNull();
   });
 
   it("keeps chat locked when analysis is not complete", () => {
