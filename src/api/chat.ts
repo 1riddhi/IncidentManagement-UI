@@ -1,15 +1,35 @@
 import type { ChatResponse } from "../types/incident";
 
-const mockResponse: ChatResponse = {
-  answer: "Update RuleResponseMapper to resolve rules by rule name instead of a positional index. Add tests for an empty rule list, an unknown rule name, and reordered rule responses.",
-  sources: ["INC-BNK-1001", "transaction-validation-service/src/main/java/.../RuleResponseMapper.java"],
-  newFindings: [{ agentName: "CodeChangeImpactAgent", status: "CODE_IMPACT_FOUND", summary: "Potentially affected approved files: RuleResponseMapper.java." }],
-  agentCalls: ["inspect_code_change_impact"],
-};
+const ANALYZE_API_BASE_URL =
+  import.meta.env.VITE_ANALYZE_API_BASE_URL ??
+  "https://prod-pulse-933450255379.asia-south1.run.app/api/v1";
 
-/** Temporary chat transport until the incident chat backend is available. */
-export function requestChatResponse(_question: string): Promise<ChatResponse> {
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(structuredClone(mockResponse)), 350);
-  });
+export async function requestChatResponse(
+  analysisId: string,
+  message: string,
+): Promise<ChatResponse> {
+  const response = await fetch(
+    `${ANALYZE_API_BASE_URL}/analysis-sessions/${encodeURIComponent(analysisId)}/chat`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Incident assistant could not respond (HTTP ${response.status})`);
+  }
+
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object" || typeof (payload as Record<string, unknown>).answer !== "string") {
+    throw new Error("Incident assistant returned an invalid response");
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  return {
+    answer: candidate.answer as string,
+    agentSummary: typeof candidate.agentSummary === "string" ? candidate.agentSummary : undefined,
+    evidenceSummary: typeof candidate.evidenceSummary === "string" ? candidate.evidenceSummary : undefined,
+  };
 }

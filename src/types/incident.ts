@@ -75,17 +75,10 @@ export interface IncidentAnalysisState {
   error?: string;
 }
 
-export interface ChatFinding {
-  agentName: string;
-  status: string;
-  summary: string;
-}
-
 export interface ChatResponse {
   answer: string;
-  sources: string[];
-  newFindings: ChatFinding[];
-  agentCalls: string[];
+  agentSummary?: string;
+  evidenceSummary?: string;
 }
 
 export interface ChatMessage {

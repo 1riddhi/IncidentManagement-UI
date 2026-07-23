@@ -1,5 +1,5 @@
 import { FormEvent, KeyboardEvent, useState } from "react";
-import { Bot, LoaderCircle, Maximize2, MessageCircle, Minimize2, Send, User } from "lucide-react";
+import { Bot, FileSearch, LoaderCircle, Maximize2, Minimize2, Send, ShieldCheck, Sparkles, User } from "lucide-react";
 import { requestChatResponse } from "../api/chat";
 import { useIncidents } from "../hooks/useIncidents";
 import type { ChatMessage, ChatResponse } from "../types/incident";
@@ -11,7 +11,9 @@ let nextMessageId = 0;
 export function IncidentChat({ isEnabled: enabledOverride }: { isEnabled?: boolean }) {
   const { id } = useParams();
   const { analysis } = useIncidents();
-  const isEnabled = enabledOverride ?? Boolean(id && analysis[id]?.status === "success");
+  const analysisState = id ? analysis[id] : undefined;
+  const analysisId = analysisState?.status === "success" ? analysisState.response?.analysisId : undefined;
+  const isEnabled = enabledOverride ?? Boolean(analysisId);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isWaiting, setIsWaiting] = useState(false);
@@ -22,16 +24,16 @@ export function IncidentChat({ isEnabled: enabledOverride }: { isEnabled?: boole
 
   async function sendMessage() {
     const question = draft.trim();
-    if (!question || isWaiting || !isEnabled) return;
+    if (!question || isWaiting || !isEnabled || !analysisId) return;
     setMessages((current) => [...current, { id: `user-${nextMessageId++}`, role: "user", content: question }]);
     setDraft("");
     setError(null);
     setIsWaiting(true);
     try {
-      const response = await requestChatResponse(question);
+      const response = await requestChatResponse(analysisId, question);
       setMessages((current) => [...current, { id: `assistant-${nextMessageId++}`, role: "assistant", content: response.answer, response }]);
-    } catch {
-      setError("The assistant could not respond. Please try again.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "The assistant could not respond. Please try again.");
     } finally {
       setIsWaiting(false);
     }
@@ -65,15 +67,16 @@ export function IncidentChat({ isEnabled: enabledOverride }: { isEnabled?: boole
       <p className="mt-2 text-xs leading-5 text-slate-500">Ask for investigation guidance, code impact, or next steps.</p>
       {!isEnabled && <p className="mt-3 rounded-lg border border-amber-300/15 bg-amber-300/5 px-3 py-2 text-xs leading-5 text-amber-100">Complete “Analyze with AI” to unlock the incident assistant.</p>}
       <div aria-live="polite" className={`mt-5 space-y-3 overflow-y-auto pr-1 ${isExpanded ? "min-h-0 flex-1" : "max-h-96"}`}>
-        {messages.length === 0 && !isWaiting && <div className="rounded-xl border border-dashed border-white/10 bg-white/3 p-4 text-center text-xs leading-5 text-slate-500">Your questions and investigation guidance will appear here.</div>}
+        {messages.length === 0 && !isWaiting && <div className="rounded-2xl border border-dashed border-cyan-300/15 bg-cyan-300/3 p-6 text-center"><span className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-cyan-300/10 text-cyan-100"><Sparkles size={18} /></span><p className="mt-3 text-sm font-medium text-slate-300">Investigation context is ready</p><p className="mt-1 text-xs leading-5 text-slate-500">Ask about the current evidence, probable causes, or safe next actions.</p></div>}
         {messages.map((message) => (
           <article key={message.id} className={`rounded-xl border p-3 ${message.role === "user" ? "ml-5 border-indigo-400/20 bg-indigo-400/10" : "mr-2 border-white/10 bg-slate-950/60"}`}>
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-slate-400">
               {message.role === "user" ? <User size={13} /> : <Bot size={13} className="text-cyan-200" />}
               {message.role === "user" ? "You" : "Incident assistant"}
             </div>
+            {message.role === "assistant" && <p className="mt-3 flex items-center gap-2 text-xs font-medium text-cyan-100"><Sparkles size={14} />Advisor assessment</p>}
             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-200">{message.content}</p>
-            {message.response && <ResponseDetails response={message.response} />}
+            {message.response && <ResponseSummary response={message.response} />}
           </article>
         ))}
         {isWaiting && <div className="mr-8 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 text-xs text-slate-400"><LoaderCircle size={15} className="animate-spin text-cyan-200" />Incident assistant is thinking…</div>}
@@ -89,10 +92,16 @@ export function IncidentChat({ isEnabled: enabledOverride }: { isEnabled?: boole
   );
 }
 
-function ResponseDetails({ response }: { response: ChatResponse }) {
-  return <details className="mt-3 rounded-lg border border-white/8 bg-white/3 px-3 py-2 text-xs"><summary className="cursor-pointer list-none font-medium text-cyan-100"><span className="inline-flex items-center gap-2"><MessageCircle size={13} />Response details</span></summary><div className="mt-3 space-y-3 text-slate-400"><DetailList label="Sources" items={response.sources} /><div><p className="font-medium text-slate-300">New findings</p><ul className="mt-1.5 space-y-2">{response.newFindings.map((finding) => <li key={`${finding.agentName}-${finding.status}`}><span className="font-medium text-cyan-100">{finding.agentName}</span><span className="ml-1 text-slate-500">({finding.status})</span><p className="mt-0.5 leading-5">{finding.summary}</p></li>)}</ul></div><DetailList label="Agent calls" items={response.agentCalls} mono /></div></details>;
+function ResponseSummary({ response }: { response: ChatResponse }) {
+  return <div className="mt-5 grid gap-3 border-t border-white/7 pt-4">
+    {response.agentSummary && <SummaryCard icon={<FileSearch size={15} />} label="Agent summary" value={response.agentSummary} tone="text-indigo-100" />}
+    {response.evidenceSummary && <SummaryCard icon={<ShieldCheck size={15} />} label="Evidence summary" value={response.evidenceSummary} tone="text-cyan-100" />}
+  </div>;
 }
 
-function DetailList({ label, items, mono = false }: { label: string; items: string[]; mono?: boolean }) {
-  return <div><p className="font-medium text-slate-300">{label}</p><ul className={`mt-1.5 space-y-1 break-all ${mono ? "font-mono" : ""}`}>{items.map((item) => <li key={item}>{item}</li>)}</ul></div>;
+function SummaryCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: string }) {
+  return <div className="rounded-xl border border-white/8 bg-gradient-to-br from-white/5 to-transparent p-3.5">
+    <p className={"flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] " + tone}>{icon}{label}</p>
+    <p className="mt-2 text-xs leading-5 text-slate-400">{value}</p>
+  </div>;
 }
