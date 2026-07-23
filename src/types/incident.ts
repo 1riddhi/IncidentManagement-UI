@@ -55,6 +55,16 @@ export interface AgentFlowStep {
   status: string;
 }
 
+export interface ConfidenceScore {
+  score: number;
+  reason: string;
+}
+
+export interface AnalysisConfidence {
+  rca?: ConfidenceScore;
+  recommendation?: ConfidenceScore;
+}
+
 export interface AnalysisResponse {
   analysisId?: string;
   incomingIncident: Partial<ServiceNowIncident>;
@@ -67,6 +77,7 @@ export interface AnalysisResponse {
   codeChanges?: string;
   evidenceSummary?: string;
   agentFlow: AgentFlowStep[];
+  confidence?: AnalysisConfidence;
 }
 
 export interface IncidentAnalysisState {
@@ -79,6 +90,7 @@ export interface ChatResponse {
   answer: string;
   agentSummary?: string;
   evidenceSummary?: string;
+  codeChanges?: string;
 }
 
 export interface ChatMessage {

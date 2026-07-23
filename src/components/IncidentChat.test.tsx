@@ -13,7 +13,7 @@ describe("IncidentChat", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
   it("sends messages to the analysis session and renders the assistant answer", async () => {
-    requestChatResponse.mockResolvedValue({ answer: "Check the release.", agentSummary: "No release found.", evidenceSummary: "CI/CD logs are missing." });
+    requestChatResponse.mockResolvedValue({ answer: "Check the release.", agentSummary: "No release found.", evidenceSummary: "CI/CD logs are missing.", codeChanges: "public void validate() {}" });
     render(<IncidentChat/>);
     const input = screen.getByLabelText("Ask the incident assistant");
     fireEvent.change(input, { target: { value: "What should I check?" } });
@@ -22,7 +22,9 @@ describe("IncidentChat", () => {
     await act(async () => {});
     expect(requestChatResponse).toHaveBeenCalledWith("analysis-1", "What should I check?");
     expect(screen.getByText("Check the release.")).toBeTruthy();
-    expect(screen.queryByText("Agent summary")).toBeNull();
+    expect(screen.getByText("What the system checked")).toBeTruthy();
+    expect(screen.getByText("public void validate() {}")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copy code changes" })).toBeTruthy();
     expect(screen.queryByText("Evidence summary")).toBeNull();
   });
 

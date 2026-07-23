@@ -3,11 +3,11 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Bell,
+  Bot,
   BrainCircuit,
   ChevronDown,
   Clock3,
   Search,
-  ShieldAlert,
   Moon,
   Sun,
 } from "lucide-react";
@@ -53,12 +53,12 @@ export function Header() {
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center gap-5 px-4 sm:px-6 lg:px-8">
         <a href="/" className="flex shrink-0 items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-400 to-cyan-300 text-slate-950 shadow-lg shadow-indigo-500/20">
-            <ShieldAlert size={20} />
+            <Bot size={20} strokeWidth={2.2} />
           </span>
           <span className="hidden text-sm font-semibold tracking-tight text-white sm:block">
-            AI Incident
+            Prod Pulse Agent
             <br />
-            <span className="font-normal text-slate-400">Management</span>
+            {/* <span className="font-normal text-slate-400">Management</span> */}
           </span>
         </a>
         <form onSubmit={submitSearch} className="relative mx-auto hidden w-full max-w-xl md:block">
@@ -88,7 +88,7 @@ export function Header() {
             aria-label="User profile"
             className="ml-2 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-gradient-to-br from-slate-600 to-slate-800 text-xs font-bold text-white"
           >
-            AR
+            DB
           </button>
         </div>
       </div>

@@ -31,5 +31,6 @@ export async function requestChatResponse(
     answer: candidate.answer as string,
     agentSummary: typeof candidate.agentSummary === "string" ? candidate.agentSummary : undefined,
     evidenceSummary: typeof candidate.evidenceSummary === "string" ? candidate.evidenceSummary : undefined,
+    codeChanges: typeof candidate.codeChanges === "string" ? candidate.codeChanges : undefined,
   };
 }

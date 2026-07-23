@@ -142,6 +142,7 @@ export async function analyzeIncident(
     codeChanges: stringValue(candidate.codeChanges),
     evidenceSummary: stringValue(candidate.evidenceSummary),
     agentFlow: Array.isArray(candidate.agentFlow) ? candidate.agentFlow.map(normalizeAgentFlowStep) : [],
+    confidence: normalizeConfidence(candidate.confidence),
   };
 }
 
@@ -166,6 +167,21 @@ function normalizeAgentFinding(value: unknown): AgentFinding {
 function normalizeAgentFlowStep(value: unknown) {
   const step = value && typeof value === "object" ? value as Record<string, unknown> : {};
   return { agentName: stringValue(step.agentName) ?? "Unknown agent", status: stringValue(step.status) ?? "UNKNOWN" };
+}
+
+function normalizeConfidence(value: unknown) {
+  if (!value || typeof value !== "object") return undefined;
+  const confidence = value as Record<string, unknown>;
+  const rca = normalizeConfidenceScore(confidence.rca);
+  const recommendation = normalizeConfidenceScore(confidence.recommendation);
+  return rca || recommendation ? { rca, recommendation } : undefined;
+}
+
+function normalizeConfidenceScore(value: unknown) {
+  if (!value || typeof value !== "object") return undefined;
+  const item = value as Record<string, unknown>;
+  if (typeof item.score !== "number" || !Number.isInteger(item.score) || item.score < 1 || item.score > 10) return undefined;
+  return { score: item.score, reason: stringValue(item.reason) ?? "No confidence rationale was provided." };
 }
 
 export const toTimestamp = (value: string) =>

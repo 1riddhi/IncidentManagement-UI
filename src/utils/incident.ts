@@ -17,6 +17,13 @@ export const formatDate = (date: string) =>
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(date.includes("T") ? date : `${date.replace(" ", "T")}Z`));
+
+export function confidenceLevel(score: number) {
+  if (score <= 3) return { label: "Low", tone: "text-rose-200", fill: "bg-rose-400" };
+  if (score <= 6) return { label: "Moderate", tone: "text-amber-100", fill: "bg-amber-300" };
+  if (score <= 8) return { label: "High", tone: "text-cyan-200", fill: "bg-cyan-400" };
+  return { label: "Very high", tone: "text-emerald-300", fill: "bg-emerald-400" };
+}
 export const filterIncidents = (
   incidents: Incident[],
   query: string,

@@ -1,14 +1,16 @@
-import { ArrowLeft, BrainCircuit, CheckCircle2, CircleDot, FileText, SearchX } from "lucide-react";
+import { ArrowLeft, BrainCircuit, CheckCircle2, ChevronDown, ChevronUp, CircleDot, FileText, SearchX } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Header, SectionHeading, SeverityBadge, StatusBadge } from "../components/ui";
 import { IncidentChat } from "../components/IncidentChat";
 import { useIncidents } from "../hooks/useIncidents";
 import type {
   Incident,
+  AnalysisConfidence,
   IncidentAnalysisState,
   TimelineEvent,
 } from "../types/incident";
-import { formatDate } from "../utils/incident";
+import { confidenceLevel, formatDate } from "../utils/incident";
 
 export function IncidentDetails() {
   const { id } = useParams();
@@ -42,8 +44,8 @@ function AnalysisSection({
       <div className="flex flex-wrap items-center gap-3 border-b border-white/7 bg-cyan-400/5 p-5 sm:p-6">
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400/15 text-cyan-200"><BrainCircuit size={20}/></span>
         <div className="min-w-0 flex-1">
-          <p className="eyebrow">AI analysis</p>
-          <h2 className="mt-1 text-lg font-semibold text-white">Investigate with AI</h2>
+          <p className="eyebrow">Incident investigation</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">Investigate this incident</h2>
         </div>
         <button
           onClick={() => runAnalysis(incident)}
@@ -53,15 +55,15 @@ function AnalysisSection({
           {isResolved
             ? "Analysis disabled for resolved incidents"
             : analysisState.status === "loading"
-            ? "Analysis in progress"
-            : "Analyze with AI"}
+            ? "Investigating"
+            : "Start investigation"}
         </button>
       </div>
 
       <div className="p-5 sm:p-6">
         {analysisState.status === "idle" && !isResolved && (
           <p className="text-sm leading-6 text-slate-300">
-            Start an AI investigation to surface a recommendation, agent findings, and similar incidents for this ticket.
+            Start an investigation to understand what happened, what to do next, and whether a similar incident has happened before.
           </p>
         )}
         {isResolved && (
@@ -73,8 +75,8 @@ function AnalysisSection({
 
         {analysisState.status === "loading" && (
           <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-5 text-sm text-slate-300">
-            <p className="font-semibold text-white">Analysis is running</p>
-            <p className="mt-2">The AI review is underway. This may take a few moments.</p>
+            <p className="font-semibold text-white">We’re looking into it</p>
+            <p className="mt-2">The investigation is gathering the available evidence. This may take a few moments.</p>
           </div>
         )}
 
@@ -94,32 +96,30 @@ function AnalysisSection({
         {analysisState.status === "success" && analysisState.response && (
           <div className="space-y-6">
 
+            {analysisState.response.confidence && <ConfidencePanel confidence={analysisState.response.confidence} />}
+
             {(analysisState.response.rca.length > 0 || analysisState.response.nextActionSteps.length > 0) && (
-              <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-                <SectionHeading eyebrow="RCA output" title="Potential root cause" />
+              <ExpandableAnalysisSection eyebrow="What we found" title="Likely cause">
                 {analysisState.response.rca.length > 0 && <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">{analysisState.response.rca.map((item) => <li key={item}>{item}</li>)}</ul>}
                 {/* {analysisState.response.nextActionSteps.length > 0 && <div className="mt-5"><p className="text-[11px] font-medium uppercase tracking-[.18em] text-slate-500">Recommended next actions</p><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-300">{analysisState.response.nextActionSteps.map((step) => <li key={step}>{step}</li>)}</ol></div>} */}
-              </section>
+              </ExpandableAnalysisSection>
             )}
 
-            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-              <SectionHeading eyebrow="AI recommendation" title="Recommendation" />
+            <ExpandableAnalysisSection eyebrow="Recommended next steps" title="What to do next">
               <div className="mt-4 space-y-5 text-sm leading-7 text-slate-300">
                 {renderRecommendationSections(analysisState.response.recommendation)}
               </div>
-            </section>
+            </ExpandableAnalysisSection>
 
             {(analysisState.response.evidenceSummary || analysisState.response.codeChanges || analysisState.response.agentFlow.length > 0) && (
-              <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-                <SectionHeading eyebrow="Investigation trace" title="Evidence summary" />
+              <ExpandableAnalysisSection eyebrow="Supporting details" title="Evidence reviewed">
                 {analysisState.response.evidenceSummary && <p className="mt-4 text-sm leading-6 text-slate-300">{analysisState.response.evidenceSummary}</p>}
                 {/* {analysisState.response.agentFlow.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{analysisState.response.agentFlow.map((step) => <span key={`${step.agentName}-${step.status}`} className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{step.agentName}: {step.status}</span>)}</div>} */}
                 {/* {analysisState.response.codeChanges && <details className="mt-5 rounded-2xl border border-white/10 bg-slate-900/80 p-4"><summary className="cursor-pointer text-sm font-medium text-cyan-100">Suggested code changes</summary><pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap font-mono text-xs leading-6 text-slate-300">{analysisState.response.codeChanges}</pre></details>} */}
-              </section>
+              </ExpandableAnalysisSection>
             )}
 
-            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-              <SectionHeading eyebrow="Related intelligence" title="Similar incidents" />
+            <ExpandableAnalysisSection eyebrow="Related incidents" title="Similar past incidents">
               <div className="mt-5 space-y-4">
                 {analysisState.response.similarIncidents.map((match) => (
                   <Link
@@ -129,25 +129,53 @@ function AnalysisSection({
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs font-semibold uppercase tracking-[.18em] text-indigo-300">{match.id}</span>
-                      <span className="rounded-full bg-slate-900/90 px-2 py-1 text-[11px] uppercase tracking-[.22em] text-slate-300">
-                        {formatSimilarity(match.similarity)} similar
+                      <span className="rounded-full border border-cyan-300/30 bg-gradient-to-r from-indigo-400/25 to-cyan-400/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[.16em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,.12)]">
+                        {formatSimilarity(match.similarity)} match
                       </span>
                     </div>
                     <h3 className="mt-3 text-sm font-semibold text-white">{match.title || "Untitled incident"}</h3>
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[.22em] text-slate-400">
                       <span className="rounded-full bg-white/5 px-2 py-1">{match.service}</span>
-                      <span className="rounded-full bg-white/5 px-2 py-1">{match.resolvedAt ? "Resolved" : "Open"}</span>
                       <span className="rounded-full bg-white/5 px-2 py-1">{match.severity}</span>
                     </div>
                   </Link>
                 ))}
               </div>
-            </section>
+            </ExpandableAnalysisSection>
           </div>
         )}
       </div>
     </section>
   );
+}
+
+function ConfidencePanel({ confidence }: { confidence: AnalysisConfidence }) {
+  const entries = [
+    { label: "RCA confidence", value: confidence.rca },
+    { label: "Recommendation confidence", value: confidence.recommendation },
+  ].filter((entry): entry is { label: string; value: NonNullable<AnalysisConfidence["rca"]> } => Boolean(entry.value));
+
+  if (!entries.length) return null;
+
+  return <ExpandableAnalysisSection eyebrow="Confidence" title="How confident is this?">
+    <div className="mt-5 space-y-5">{entries.map(({ label, value }) => {
+      const level = confidenceLevel(value.score);
+      return <div key={label} className="rounded-2xl border border-white/8 bg-white/3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-semibold text-white">{label}</p><span className={`rounded-full bg-white/6 px-2.5 py-1 text-xs font-semibold ${level.tone}`}>{level.label} · {value.score}/10</span></div>
+        <div className="mt-3 grid grid-cols-10 gap-1" aria-label={`${label}: ${value.score} out of 10`}>{Array.from({ length: 10 }, (_, index) => <span key={index} className={`h-2 rounded-full ${index < value.score ? level.fill : "bg-white/10"}`} />)}</div>
+        <p className="mt-3 text-sm leading-6 text-slate-300">{value.reason}</p>
+      </div>;
+    })}</div>
+  </ExpandableAnalysisSection>;
+}
+
+function ExpandableAnalysisSection({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  return <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
+    <SectionHeading eyebrow={eyebrow} title={title} />
+    <div className={`overflow-hidden ${isExpanded ? "mt-4" : "mt-4 max-h-40"}`}>{children}</div>
+    <div className="relative mt-4 flex h-7 items-center justify-center"><i className="absolute inset-x-0 border-t border-white/10"/><button type="button" aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`} onClick={() => setIsExpanded((value) => !value)} className="relative z-10 grid h-7 w-10 place-items-center rounded-full border border-white/10 bg-slate-950 text-slate-300 transition hover:border-cyan-300/30 hover:text-cyan-100">{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button></div>
+  </section>;
 }
 
 function formatSimilarity(similarity: number) {

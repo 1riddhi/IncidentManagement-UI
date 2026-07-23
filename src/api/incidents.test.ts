@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { analyzeIncident, normalizeIncident } from "./incidents";
-import { filterIncidents } from "../utils/incident";
+import { confidenceLevel, filterIncidents } from "../utils/incident";
 import type { Incident, ServiceNowIncident } from "../types/incident";
 
 const fixture: ServiceNowIncident = {
@@ -41,6 +41,13 @@ describe("live incident normalization", () => {
     expect(filterIncidents([archived], "risk 123", "all")).toEqual([archived]);
   });
 
+  it("maps confidence score thresholds to the intended labels", () => {
+    expect(confidenceLevel(3).label).toBe("Low");
+    expect(confidenceLevel(4).label).toBe("Moderate");
+    expect(confidenceLevel(7).label).toBe("High");
+    expect(confidenceLevel(9).label).toBe("Very high");
+  });
+
   it("accepts the current analyze API response and derives a recommendation from its summary", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       analysisId: "analysis-1",
@@ -53,6 +60,10 @@ describe("live incident normalization", () => {
       codeChanges: "removeHardcodedCondition();",
       evidenceSummary: "Repository evidence matches the incident log.",
       agentFlow: [{ agentName: "RcaGraphAgent", status: "COMPLETED" }],
+      confidence: {
+        rca: { score: 8, reason: "Logs and deployment evidence agree." },
+        recommendation: { score: 11, reason: "Invalid score should be ignored." },
+      },
     }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -64,6 +75,7 @@ describe("live incident normalization", () => {
     expect(response.recommendation).toContain("Verify the deployed image.");
     expect(response.rca).toHaveLength(1);
     expect(response.agentFlow).toEqual([{ agentName: "RcaGraphAgent", status: "COMPLETED" }]);
+    expect(response.confidence).toEqual({ rca: { score: 8, reason: "Logs and deployment evidence agree." }, recommendation: undefined });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       incident: {
         id: fixture.id,

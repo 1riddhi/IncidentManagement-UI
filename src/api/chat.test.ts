@@ -9,6 +9,7 @@ describe("requestChatResponse", () => {
       answer: "Investigate the release pipeline.",
       agentSummary: "No successful deployment was found.",
       evidenceSummary: "Deployment evidence is incomplete.",
+      codeChanges: "public void validate() {}",
       sources: ["ignored"],
     }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
@@ -17,6 +18,7 @@ describe("requestChatResponse", () => {
       answer: "Investigate the release pipeline.",
       agentSummary: "No successful deployment was found.",
       evidenceSummary: "Deployment evidence is incomplete.",
+      codeChanges: "public void validate() {}",
     });
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/analysis-sessions/analysis%2Ftest/chat"),
