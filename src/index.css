@@ -115,6 +115,18 @@ button {
   animation-duration: 2.8s;
   animation-direction: reverse;
 }
+.confidence-ring {
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.86) 54%, transparent 56%);
+  filter: drop-shadow(0 0 8px currentColor);
+}
+.confidence-ring-progress {
+  animation: confidence-ring-draw 850ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+@keyframes confidence-ring-draw {
+  from { stroke-dashoffset: 114; opacity: 0.2; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
 @keyframes thinking-orbit { to { transform: rotate(360deg); } }
 .investigation-frame {
   border: 3px solid transparent;
@@ -355,6 +367,9 @@ html[data-theme="light"] .investigation-thinking {
 html[data-theme="light"] .investigation-thinking .text-white { color: #172033 !important; }
 html[data-theme="light"] .investigation-thinking .text-slate-400 { color: #64748b !important; }
 html[data-theme="light"] .thinking-orbit { color: #0e7490; }
+html[data-theme="light"] .confidence-ring {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.92) 54%, transparent 56%);
+}
 html[data-theme="light"] .investigation-thinking .typing-dots i {
   background: #4f46e5;
   box-shadow: 0 0 7px rgba(79, 70, 229, 0.3);

@@ -96,16 +96,14 @@ function AnalysisSection({
         {analysisState.status === "success" && analysisState.response && (
           <div className="space-y-6">
 
-            {analysisState.response.confidence && <ConfidencePanel confidence={analysisState.response.confidence} />}
-
             {(analysisState.response.rca.length > 0 || analysisState.response.nextActionSteps.length > 0) && (
-              <ExpandableAnalysisSection eyebrow="What we found" title="Likely cause">
+              <ExpandableAnalysisSection eyebrow="What we found" title="Likely cause" action={analysisState.response.confidence?.rca && <ConfidenceRing confidence={analysisState.response.confidence.rca} label="RCA confidence" />}>
                 {analysisState.response.rca.length > 0 && <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">{analysisState.response.rca.map((item) => <li key={item}>{item}</li>)}</ul>}
                 {/* {analysisState.response.nextActionSteps.length > 0 && <div className="mt-5"><p className="text-[11px] font-medium uppercase tracking-[.18em] text-slate-500">Recommended next actions</p><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-300">{analysisState.response.nextActionSteps.map((step) => <li key={step}>{step}</li>)}</ol></div>} */}
               </ExpandableAnalysisSection>
             )}
 
-            <ExpandableAnalysisSection eyebrow="Recommended next steps" title="What to do next">
+            <ExpandableAnalysisSection eyebrow="Recommended next steps" title="What to do next" action={analysisState.response.confidence?.recommendation && <ConfidenceRing confidence={analysisState.response.confidence.recommendation} label="Recommendation confidence" />}>
               <div className="mt-4 space-y-5 text-sm leading-7 text-slate-300">
                 {renderRecommendationSections(analysisState.response.recommendation)}
               </div>
@@ -173,30 +171,21 @@ function InvestigationThinking() {
   </div>;
 }
 
-function ConfidencePanel({ confidence }: { confidence: AnalysisConfidence }) {
-  const entries = [
-    { label: "RCA confidence", value: confidence.rca },
-    { label: "Recommendation confidence", value: confidence.recommendation },
-  ].filter((entry): entry is { label: string; value: NonNullable<AnalysisConfidence["rca"]> } => Boolean(entry.value));
-
-  if (!entries.length) return null;
-
-  return <ExpandableAnalysisSection eyebrow="Confidence" title="How confident is this?">
-    <div className="mt-5 space-y-5">{entries.map(({ label, value }) => {
-      const level = confidenceLevel(value.score);
-      return <div key={label} className="rounded-2xl border border-white/8 bg-white/3 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-semibold text-white">{label}</p><span className={`rounded-full bg-white/6 px-2.5 py-1 text-xs font-semibold ${level.tone}`}>{level.label} · {value.score}/10</span></div>
-        <div className="mt-3 grid grid-cols-10 gap-1" aria-label={`${label}: ${value.score} out of 10`}>{Array.from({ length: 10 }, (_, index) => <span key={index} className={`h-2 rounded-full ${index < value.score ? level.fill : "bg-white/10"}`} />)}</div>
-        <p className="mt-3 text-sm leading-6 text-slate-300">{value.reason}</p>
-      </div>;
-    })}</div>
-  </ExpandableAnalysisSection>;
+function ConfidenceRing({ confidence, label }: { confidence: NonNullable<AnalysisConfidence["rca"]>; label: string }) {
+  const level = confidenceLevel(confidence.score);
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (confidence.score / 10) * circumference;
+  return <span className={`confidence-ring relative grid h-12 w-12 place-items-center ${level.tone}`} title={`${label}: ${confidence.score}/10 — ${confidence.reason}`} aria-label={`${label}: ${confidence.score} out of 10`}>
+    <svg className="absolute inset-0 -rotate-90" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3" className="opacity-15"/><circle className="confidence-ring-progress" cx="24" cy="24" r={radius} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${progress} ${circumference}`} /></svg>
+    <span className="text-[11px] font-bold tracking-tight">{confidence.score}<small className="text-[8px] font-medium">/10</small></span>
+  </span>;
 }
 
-function ExpandableAnalysisSection({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
+function ExpandableAnalysisSection({ eyebrow, title, action, children }: { eyebrow: string; title: string; action?: React.ReactNode; children: React.ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(false);
   return <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-    <SectionHeading eyebrow={eyebrow} title={title} />
+    <SectionHeading eyebrow={eyebrow} title={title} action={action} />
     <div className={`overflow-hidden ${isExpanded ? "mt-4" : "mt-4 max-h-40"}`}>{children}</div>
     <div className="relative mt-4 flex h-7 items-center justify-center"><i className="absolute inset-x-0 border-t border-white/10"/><button type="button" aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`} onClick={() => setIsExpanded((value) => !value)} className="relative z-10 grid h-7 w-10 place-items-center rounded-full border border-white/10 bg-slate-950 text-slate-300 transition hover:border-cyan-300/30 hover:text-cyan-100">{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button></div>
   </section>;
