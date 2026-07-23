@@ -88,6 +88,50 @@ button {
 .incident-chat-minimizing {
   animation: incident-chat-minimize 220ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
+.investigation-loader {
+  border-radius: inherit;
+}
+.investigation-thinking {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-color: rgba(103, 232, 249, 0.18);
+  background: linear-gradient(135deg, rgba(8, 47, 73, 0.38), rgba(30, 41, 59, 0.5));
+}
+.thinking-orbit {
+  color: #a5f3fc;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.25), rgba(99, 102, 241, 0.12) 56%, transparent 58%);
+}
+.thinking-signal {
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(103, 232, 249, 0.55);
+  border-radius: 999px;
+  animation: thinking-orbit 2s linear infinite;
+}
+.thinking-signal-two {
+  inset: 0;
+  border-color: rgba(129, 140, 248, 0.34);
+  animation-duration: 2.8s;
+  animation-direction: reverse;
+}
+@keyframes thinking-orbit { to { transform: rotate(360deg); } }
+.investigation-frame {
+  border: 3px solid transparent;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.58), rgba(99, 102, 241, 0.55), rgba(192, 132, 252, 0.52), rgba(52, 211, 153, 0.55), rgba(34, 211, 238, 0.58));
+  background-size: 280% 100%;
+  background-position: 0 0;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.08), 0 0 22px rgba(34, 211, 238, 0.2), 0 0 54px rgba(99, 102, 241, 0.13);
+  filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.36)) drop-shadow(0 0 36px rgba(99, 102, 241, 0.25)) drop-shadow(0 0 72px rgba(192, 132, 252, 0.16));
+  animation: investigation-border-flow 2.6s linear infinite;
+}
+@keyframes investigation-border-flow {
+  to { background-position: 280% 0; }
+}
 .chat-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(129, 140, 248, 0.58) transparent;
@@ -298,4 +342,20 @@ html[data-theme="light"] .chat-code-editor .text-slate-600 {
 }
 html[data-theme="light"] .chat-code-editor button {
   color: #334155 !important;
+}
+html[data-theme="light"] .investigation-frame {
+  background: linear-gradient(90deg, rgba(8, 145, 178, 0.55), rgba(79, 70, 229, 0.52), rgba(124, 58, 237, 0.5), rgba(5, 150, 105, 0.52), rgba(8, 145, 178, 0.55));
+  box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.08), 0 0 20px rgba(8, 145, 178, 0.16), 0 0 50px rgba(79, 70, 229, 0.1);
+  filter: drop-shadow(0 0 12px rgba(8, 145, 178, 0.3)) drop-shadow(0 0 34px rgba(79, 70, 229, 0.2)) drop-shadow(0 0 68px rgba(124, 58, 237, 0.12));
+}
+html[data-theme="light"] .investigation-thinking {
+  border-color: rgba(79, 70, 229, 0.2);
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.78), rgba(238, 242, 255, 0.82));
+}
+html[data-theme="light"] .investigation-thinking .text-white { color: #172033 !important; }
+html[data-theme="light"] .investigation-thinking .text-slate-400 { color: #64748b !important; }
+html[data-theme="light"] .thinking-orbit { color: #0e7490; }
+html[data-theme="light"] .investigation-thinking .typing-dots i {
+  background: #4f46e5;
+  box-shadow: 0 0 7px rgba(79, 70, 229, 0.3);
 }

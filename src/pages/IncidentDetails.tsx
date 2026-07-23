@@ -40,8 +40,8 @@ function AnalysisSection({
   isResolved: boolean;
 }) {
   return (
-    <section className="panel overflow-hidden">
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/7 bg-cyan-400/5 p-5 sm:p-6">
+    <section className="panel relative overflow-visible">
+      <div className="flex flex-wrap items-center gap-3 rounded-t-[17px] border-b border-white/7 bg-cyan-400/5 p-5 sm:p-6">
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400/15 text-cyan-200"><BrainCircuit size={20}/></span>
         <div className="min-w-0 flex-1">
           <p className="eyebrow">Incident investigation</p>
@@ -74,10 +74,10 @@ function AnalysisSection({
         )}
 
         {analysisState.status === "loading" && (
-          <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-5 text-sm text-slate-300">
-            <p className="font-semibold text-white">We’re looking into it</p>
-            <p className="mt-2">The investigation is gathering the available evidence. This may take a few moments.</p>
-          </div>
+          <>
+            <InvestigationLoader />
+            <InvestigationThinking />
+          </>
         )}
 
         {analysisState.status === "error" && (
@@ -147,6 +147,30 @@ function AnalysisSection({
       </div>
     </section>
   );
+}
+
+function InvestigationLoader() {
+  return <div className="investigation-loader absolute inset-0 z-20 pointer-events-none" role="status" aria-live="polite">
+    <div className="investigation-frame absolute inset-0 rounded-[18px]" />
+    <span className="sr-only">Investigation in progress. Please wait for the response.</span>
+  </div>;
+}
+
+function InvestigationThinking() {
+  return <div className="investigation-thinking rounded-3xl border p-5 sm:p-6" role="status">
+    <div className="flex items-center gap-4">
+      <div className="thinking-orbit relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl">
+        <i className="thinking-signal thinking-signal-one" />
+        <i className="thinking-signal thinking-signal-two" />
+        <BrainCircuit size={21} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white">AI is investigating</p>
+        <p className="mt-1 text-xs text-slate-400">Connecting evidence, history, and code context</p>
+      </div>
+      <span className="typing-dots" aria-hidden="true"><i/><i/><i/></span>
+    </div>
+  </div>;
 }
 
 function ConfidencePanel({ confidence }: { confidence: AnalysisConfidence }) {
