@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -7,8 +7,9 @@ import {
   ChevronDown,
   Clock3,
   Search,
-  Settings2,
   ShieldAlert,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -22,6 +23,15 @@ export function Header() {
   const { incidents } = useIncidents();
   const query = searchParams.get("q") ?? "";
   const matches = query ? filterIncidents(incidents, query, "all").slice(0, 6) : [];
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    const savedTheme = window.localStorage.getItem("theme");
+    return savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
   function updateQuery(value: string) {
     const next = new URLSearchParams(searchParams);
@@ -71,8 +81,8 @@ export function Header() {
           <button aria-label="Notifications" className="icon-button">
             <Bell size={18} />
           </button>
-          <button aria-label="Settings" className="icon-button">
-            <Settings2 size={18} />
+          <button aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} className="icon-button">
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
             aria-label="User profile"

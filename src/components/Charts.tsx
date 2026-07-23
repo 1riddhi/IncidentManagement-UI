@@ -15,7 +15,7 @@ const serviceNames = [
   "ledger-posting-service",
   "customer-onboarding-api",
 ];
-const tooltipStyle = { background: "#111c2d", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, color: "#e2e8f0" };
+const tooltipStyle = { background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 12, color: "var(--chart-tooltip-text)" };
 const parseDate = (value: string) => new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
 
 function useChartRange(incidents: Incident[]) {

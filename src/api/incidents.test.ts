@@ -59,7 +59,7 @@ describe("live incident normalization", () => {
     const response = await analyzeIncident(fixture);
 
     expect(response.analysisId).toBe("analysis-1");
-    expect(fetchMock.mock.calls[0][0]).toBe("https://prod-pulse-933450255379.asia-south1.run.app/incidents/analyze");
+    expect(fetchMock.mock.calls[0][0]).toBe("https://prod-pulse-933450255379.asia-south1.run.app/api/v1/incidents/analyze");
     expect(response.recommendation).toContain("The validation service contains a hardcoded failure.");
     expect(response.recommendation).toContain("Verify the deployed image.");
     expect(response.rca).toHaveLength(1);

@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Header } from "./ui";
 
 vi.mock("../hooks/useIncidents", () => ({
@@ -19,6 +19,8 @@ function LocationDisplay() {
 }
 
 describe("Header search", () => {
+  afterEach(cleanup);
+
   it("hydrates from the URL and opens a selected result directly", () => {
     render(
       <MemoryRouter initialEntries={["/incident/INC123?q=payment"]}>
@@ -33,5 +35,13 @@ describe("Header search", () => {
     expect(screen.getByRole("listbox", { name: "Incident search results" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /INC123.*Payment validation failure/i }));
     expect(screen.getByText("/incident/INC123")).toBeTruthy();
+  });
+
+  it("switches between dark and light themes", () => {
+    window.localStorage.setItem("theme", "dark");
+    render(<MemoryRouter><Header /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(screen.getByRole("button", { name: "Switch to dark theme" })).toBeTruthy();
   });
 });
