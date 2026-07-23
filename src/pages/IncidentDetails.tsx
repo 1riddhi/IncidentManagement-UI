@@ -125,7 +125,7 @@ export function IncidentDetails() {
           </div>
         </section>
         <section className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <AnalysisSection
               incident={incident}
               analysisState={analysisState}
@@ -173,7 +173,7 @@ export function IncidentDetails() {
               </section>
             )}
           </div>
-          <aside>
+          <aside className="min-w-0">
             <section className="panel p-5 sm:p-6">
               <SectionHeading
                 eyebrow="ServiceNow events"
