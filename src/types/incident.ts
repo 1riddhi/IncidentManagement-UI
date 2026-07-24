@@ -65,6 +65,14 @@ export interface AnalysisConfidence {
   recommendation?: ConfidenceScore;
 }
 
+export interface CodeChangeProposal {
+  repository: string;
+  filePath: string;
+  baseBranch: "main";
+  proposedCode: string;
+  codeChanges: string;
+}
+
 export interface ConfluenceSource {
   pageId: string;
   title: string;
@@ -84,7 +92,7 @@ export interface AnalysisResponse {
   summary?: string;
   nextActionSteps: string[];
   rca: string[];
-  codeChanges?: string;
+  codeChanges?: CodeChangeProposal;
   evidenceSummary?: string;
   agentFlow: AgentFlowStep[];
   confidence?: AnalysisConfidence;

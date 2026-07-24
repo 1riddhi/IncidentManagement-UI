@@ -2,7 +2,7 @@ import type { ChatResponse } from "../types/incident";
 
 const ANALYZE_API_BASE_URL =
   import.meta.env.VITE_ANALYZE_API_BASE_URL ??
-  "https://prod-pulse-933450255379.asia-south1.run.app/api/v1";
+  "http://localhost:8000/api/v1";
 
 export async function requestChatResponse(
   analysisId: string,

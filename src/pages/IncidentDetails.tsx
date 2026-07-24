@@ -10,9 +10,11 @@ import {
   Code2,
   ExternalLink,
   FileText,
+  GitPullRequestDraft,
   SearchX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import {
   Header,
@@ -25,10 +27,12 @@ import { useIncidents } from "../hooks/useIncidents";
 import type {
   Incident,
   AnalysisConfidence,
+  CodeChangeProposal,
   IncidentAnalysisState,
   TimelineEvent,
 } from "../types/incident";
 import { formatDate } from "../utils/incident";
+import { createDraftPr, requestDraftPrPreview, type DraftPrCreated, type DraftPrPreview } from "../api/draftPr";
 
 export function IncidentDetails() {
   const { id } = useParams();
@@ -383,7 +387,8 @@ function AnalysisSection({
                 {/* {analysisState.response.agentFlow.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{analysisState.response.agentFlow.map((step) => <span key={`${step.agentName}-${step.status}`} className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{step.agentName}: {step.status}</span>)}</div>} */}
                 {analysisState.response.codeChanges && (
                   <AnalysisCodeChanges
-                    code={analysisState.response.codeChanges}
+                    proposal={analysisState.response.codeChanges}
+                    analysisId={analysisState.response.analysisId}
                   />
                 )}
               </ExpandableAnalysisSection>
@@ -579,42 +584,61 @@ function confidenceSegmentTone(index: number) {
   ][index];
 }
 
-function AnalysisCodeChanges({ code }: { code: string }) {
+export function AnalysisCodeChanges({ proposal, analysisId }: { proposal: CodeChangeProposal; analysisId?: string }) {
   const [copied, setCopied] = useState(false);
-  const lines = code.split("\n");
-  const language = /\b(public|private|class|import java)\b/.test(code)
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [repository, setRepository] = useState(proposal.repository);
+  const [filePath, setFilePath] = useState(proposal.filePath);
+  const [baseBranch, setBaseBranch] = useState<string>(proposal.baseBranch);
+  const [preview, setPreview] = useState<DraftPrPreview>();
+  const [created, setCreated] = useState<DraftPrCreated>();
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const lines = proposal.proposedCode.split("\n");
+  const language = /\b(public|private|class|import java)\b/.test(proposal.proposedCode)
     ? "Java"
     : "Code";
 
   async function copyCode() {
-    await navigator.clipboard?.writeText(code);
+    await navigator.clipboard?.writeText(proposal.proposedCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   }
+
+  async function generatePreview() {
+    if (!analysisId || !repository.trim() || !filePath.trim()) return;
+    setIsLoading(true); setError("");
+    try { setPreview(await requestDraftPrPreview(analysisId, repository.trim(), filePath.trim(), baseBranch.trim() || undefined)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to generate a draft PR preview."); }
+    finally { setIsLoading(false); }
+  }
+
+  async function confirmDraftPr() {
+    if (!analysisId || !preview) return;
+    setIsLoading(true); setError("");
+    try { setCreated(await createDraftPr(analysisId, preview.previewId)); setIsDialogOpen(false); setPreview(undefined); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to create the draft PR."); }
+    finally { setIsLoading(false); }
+  }
+
+  function closeDialog() { if (!isLoading) { setIsDialogOpen(false); setError(""); } }
 
   return (
     <div className="chat-code-editor mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0b1322]">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/4 px-3 py-2.5">
         <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-cyan-100">
           <Code2 size={14} />
-          Suggested code changes{" "}
+          Proposed code{" "}
           <span className="rounded bg-white/8 px-1.5 py-0.5 text-[10px] text-slate-400">
             {language}
           </span>
         </span>
-        <button
-          type="button"
-          aria-label="Copy suggested code changes"
-          onClick={() => void copyCode()}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-300 transition hover:bg-white/8 hover:text-white"
-        >
-          {copied ? (
-            <Check size={13} className="text-emerald-300" />
-          ) : (
-            <Clipboard size={13} />
-          )}{" "}
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <div className="flex items-center gap-1">
+          {analysisId && <button type="button" aria-label="Create draft pull request" onClick={() => { setError(""); setIsDialogOpen(true); }} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/10 hover:text-white"><GitPullRequestDraft size={13} />Create draft PR</button>}
+          <button type="button" aria-label="Copy suggested code changes" onClick={() => void copyCode()} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-300 transition hover:bg-white/8 hover:text-white">
+            {copied ? <Check size={13} className="text-emerald-300" /> : <Clipboard size={13} />}{" "}{copied ? "Copied" : "Copy"}
+          </button>
+        </div>
       </div>
       <pre className="chat-code-scroll max-h-56 w-full min-w-0 max-w-full overflow-x-auto overflow-y-auto p-3 text-xs leading-6 text-slate-200">
         <code>
@@ -628,6 +652,29 @@ function AnalysisCodeChanges({ code }: { code: string }) {
           ))}
         </code>
       </pre>
+      {created && <p className="border-t border-emerald-300/15 bg-emerald-300/5 px-3 py-2 text-xs text-emerald-100">Draft PR #{created.number} created. <a href={created.url} target="_blank" rel="noreferrer" className="font-semibold underline">Open pull request</a></p>}
+      {isDialogOpen && createPortal(
+        <div className="draft-pr-backdrop fixed inset-0 z-50 grid place-items-center p-4 backdrop-blur-sm" role="presentation" onMouseDown={closeDialog}>
+          <section role="dialog" aria-modal="true" aria-labelledby="draft-pr-title" className="draft-pr-dialog w-full max-w-3xl rounded-2xl border text-slate-900 shadow-2xl backdrop-blur-xl" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="draft-pr-divider border-b px-5 py-4"><h3 id="draft-pr-title" className="draft-pr-title text-base font-semibold">Create draft pull request</h3><p className="draft-pr-description mt-1 text-sm">Generate and review a patch before creating a GitHub draft PR.</p></div>
+            <div className="draft-pr-content space-y-4 p-5">
+              {!preview ? <>
+                <label className="block text-sm font-medium text-slate-700">GitHub repository<input value={repository} onChange={(event) => setRepository(event.target.value)} placeholder="owner/repository" className="draft-pr-input mt-1.5 w-full rounded-lg border px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" /></label>
+                <label className="block text-sm font-medium text-slate-700">Repository file path<input autoFocus value={filePath} onChange={(event) => setFilePath(event.target.value)} placeholder="src/services/Example.java" className="draft-pr-input mt-1.5 w-full rounded-lg border px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" /></label>
+                <label className="block text-sm font-medium text-slate-700">Base branch <span className="font-normal text-slate-500">(defaults to main)</span><input value={baseBranch} onChange={(event) => setBaseBranch(event.target.value)} placeholder="main" className="draft-pr-input mt-1.5 w-full rounded-lg border px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" /></label>
+              </> : <><div className="draft-pr-meta flex flex-wrap gap-2 text-xs"><span className="draft-pr-meta-card">{preview.repository}</span><span className="draft-pr-meta-card">{preview.filePath}</span><span className="draft-pr-meta-card">base: {preview.baseBranch}</span></div><pre aria-label="Generated patch preview" className="draft-pr-code max-h-80 overflow-auto rounded-xl border p-3 text-xs leading-5"><code>{preview.patch.split("\n").map((line, index) => <span key={index} className={`draft-pr-diff-line ${line.startsWith("+") ? "draft-pr-diff-add" : line.startsWith("-") ? "draft-pr-diff-remove" : line.startsWith("@@") ? "draft-pr-diff-hunk" : ""}`}>{line || " "}{"\n"}</span>)}</code></pre></>}
+              {error && <p role="alert" className="draft-pr-error rounded-lg border px-3 py-2 text-sm">{error}</p>}
+            </div>
+            <div className="draft-pr-divider flex justify-end gap-3 border-t px-5 py-4">
+              {preview && <button type="button" onClick={() => { setPreview(undefined); setError(""); }} disabled={isLoading} className="draft-pr-secondary rounded-lg px-3 py-2 text-sm">Back</button>}
+              <button type="button" onClick={closeDialog} disabled={isLoading} className="draft-pr-secondary rounded-lg px-3 py-2 text-sm">Cancel</button>
+              {!preview ? <button type="button" onClick={() => void generatePreview()} disabled={isLoading || !repository.trim() || !filePath.trim()} className="draft-pr-primary rounded-lg px-3 py-2 text-sm font-semibold shadow-sm transition disabled:opacity-50">{isLoading ? "Generating…" : "Generate preview"}</button> : <button type="button" onClick={() => void confirmDraftPr()} disabled={isLoading} className="draft-pr-primary rounded-lg px-3 py-2 text-sm font-semibold shadow-sm transition disabled:opacity-50">{isLoading ? "Creating…" : "Confirm draft PR"}</button>}
+            </div>
+          </section>
+        </div>
+        ,
+        document.body,
+      )}
     </div>
   );
 }

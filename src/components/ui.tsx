@@ -68,7 +68,7 @@ export function Header() {
             placeholder="Search incidents, services, RCA..."
             className="h-10 w-full rounded-xl border border-white/8 bg-white/5 pl-10 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/50 focus:bg-white/8"
           />
-          {query && <div className="absolute left-0 right-0 top-12 overflow-hidden rounded-xl border border-white/10 bg-[#121d2e] p-1 shadow-2xl shadow-slate-950/60">
+          {query && <div className="incident-search-menu absolute left-0 right-0 top-12 overflow-hidden rounded-xl border border-white/10 bg-[#121d2e] p-1 shadow-2xl shadow-slate-950/60">
             {matches.length > 0 ? <ul role="listbox" aria-label="Incident search results" className="max-h-80 overflow-y-auto">{matches.map((incident) => <li key={`${incident.source}-${incident.id}`}><button type="button" onClick={() => openIncident(incident.id)} className="w-full rounded-lg px-3 py-2.5 text-left transition hover:bg-white/7"><span className="font-mono text-xs font-semibold text-indigo-300">{incident.id}</span><span className="ml-2 text-sm text-slate-200">{incident.title || "Untitled incident"}</span><span className="mt-1 block truncate text-xs text-slate-500">{incident.service} · {incident.status} · {incident.severity}</span></button></li>)}</ul> : <p className="px-3 py-3 text-sm text-slate-400">No incidents match “{query}”.</p>}
           </div>}
         </form>

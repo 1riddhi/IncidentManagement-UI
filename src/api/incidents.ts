@@ -1,6 +1,7 @@
 import type {
   AgentFinding,
   AnalysisResponse,
+  CodeChangeProposal,
   Incident,
   IncidentSource,
   ServiceNowIncident,
@@ -13,7 +14,7 @@ const API_BASE_URL =
   "https://incident-management2-933450255379.asia-south1.run.app/api/v1";
 const ANALYZE_API_BASE_URL =
   import.meta.env.VITE_ANALYZE_API_BASE_URL ??
-  "https://prod-pulse-933450255379.asia-south1.run.app/api/v1";
+  "http://localhost:8000/api/v1";
 
 const isSeverity = (value: string): value is Severity =>
   ["P1", "P2", "P3", "P4"].includes(value);
@@ -139,7 +140,7 @@ export async function analyzeIncident(
     summary: stringValue(candidate.summary),
     nextActionSteps,
     rca,
-    codeChanges: stringValue(candidate.codeChanges),
+    codeChanges: normalizeCodeChangeProposal(candidate.codeChanges),
     evidenceSummary: stringValue(candidate.evidenceSummary),
     agentFlow: Array.isArray(candidate.agentFlow) ? candidate.agentFlow.map(normalizeAgentFlowStep) : [],
     confidence: normalizeConfidence(candidate.confidence),
@@ -169,6 +170,18 @@ function normalizeConfluenceSources(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value : undefined;
+}
+
+function normalizeCodeChangeProposal(value: unknown): CodeChangeProposal | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const proposal = value as Record<string, unknown>;
+  const repository = stringValue(proposal.repository);
+  const filePath = stringValue(proposal.filePath);
+  const baseBranch = stringValue(proposal.baseBranch);
+  const proposedCode = stringValue(proposal.proposedCode);
+  const codeChanges = stringValue(proposal.codeChanges);
+  if (!repository || !filePath || baseBranch !== "main" || !proposedCode || !codeChanges) return undefined;
+  return { repository, filePath, baseBranch, proposedCode, codeChanges };
 }
 
 function stringArray(value: unknown) {

@@ -57,7 +57,13 @@ describe("live incident normalization", () => {
       summary: "The validation service contains a hardcoded failure.",
       nextActionSteps: ["Verify the deployed image."],
       rca: ["A hardcoded conditional throws the validation exception."],
-      codeChanges: "removeHardcodedCondition();",
+      codeChanges: {
+        repository: "owner/validation-service",
+        filePath: "src/Validator.java",
+        baseBranch: "main",
+        proposedCode: "class Validator { void validate() {} }",
+        codeChanges: "--- a/src/Validator.java\n+++ b/src/Validator.java\n@@ -1 +1 @@\n-class Validator {}\n+class Validator { void validate() {} }\n",
+      },
       evidenceSummary: "Repository evidence matches the incident log.",
       agentFlow: [{ agentName: "RcaGraphAgent", status: "COMPLETED" }],
       confidence: {
@@ -70,10 +76,11 @@ describe("live incident normalization", () => {
     const response = await analyzeIncident(fixture);
 
     expect(response.analysisId).toBe("analysis-1");
-    expect(fetchMock.mock.calls[0][0]).toBe("https://prod-pulse-933450255379.asia-south1.run.app/api/v1/incidents/analyze");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8000/api/v1/incidents/analyze");
     expect(response.recommendation).toContain("The validation service contains a hardcoded failure.");
     expect(response.recommendation).toContain("Verify the deployed image.");
     expect(response.rca).toHaveLength(1);
+    expect(response.codeChanges).toMatchObject({ repository: "owner/validation-service", filePath: "src/Validator.java", baseBranch: "main" });
     expect(response.agentFlow).toEqual([{ agentName: "RcaGraphAgent", status: "COMPLETED" }]);
     expect(response.confidence).toEqual({ rca: { score: 8, reason: "Logs and deployment evidence agree." }, recommendation: undefined });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
